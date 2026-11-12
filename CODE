@@ -1,13 +1,11 @@
 
 /////////////////////////////////////////////////////////////////////
-// Name:
+// Name:Jaziel Ramirez
 // Date: 11/12/26
 // Class: CSCI 1470-04
 // Semester: Fall 2026
 // CSCI 1470 Instructor: Dr. Jonatan Reyes
 // Program Description: A spell checker for elementary students.
-// This program checks words using three searching methods and
-// allows students to practice spelling.
 // ///////////////////////////////////////////////////////////////////
 
 #include <iostream>
