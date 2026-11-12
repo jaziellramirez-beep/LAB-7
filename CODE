@@ -1,1 +1,333 @@
 
+/////////////////////////////////////////////////////////////////////
+// Name:
+// Date: 11/12/26
+// Class: CSCI 1470-04
+// Semester: Fall 2026
+// CSCI 1470 Instructor: Dr. Jonatan Reyes
+// Program Description: A spell checker for elementary students.
+// This program checks words using three searching methods and
+// allows students to practice spelling.
+// ///////////////////////////////////////////////////////////////////
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <chrono>
+#include <iomanip>
+#include <algorithm>
+
+using namespace std;
+using namespace std::chrono;
+
+// GLOBAL CONSTANTS
+const int MAX_WORDS = 466551;
+
+const string LINEAR_SEARCH_UNSORTED = "LINEAR_UNSORTED";
+const string LINEAR_SEARCH_SORTED = "LINEAR_SORTED";
+const string BINARY_SEARCH = "BINARY";
+
+// DEBUG FLAG
+const bool DEBUG = true;
+
+// FUNCTION PROTOTYPES
+void initializeArray(string dictArray[], int size);
+
+bool populateArray(string dictArray[], int size, string filename);
+
+int countNonEmptyWords(const string dictArray[], int size);
+//down here is for lab 7
+bool linearSearchUnsorted(const string dictArray[],string word, int size);
+
+bool linearSearchSorted(const string dictArray[],string word, int size);
+
+bool binarySearch(const string dictArray[],string word, int size);
+
+bool spellCheck(const string dictArray[], string word, string searchType, int size);
+
+
+int main()
+{
+    // CREATE DICTIONARY ARRAY//given in lab 7 
+    string* dictionary = new string[MAX_WORDS];//string* use is dynamic
+
+    // SETTINGS VARIABLES
+    int maxMistakes = 3;
+    string searchType = LINEAR_SEARCH_UNSORTED;
+
+    string filename = "dictionary.txt";
+
+    // LOAD SETTINGS FILE
+    ifstream settingsFile("settings.txt");
+
+    if (settingsFile.is_open())
+    {
+        settingsFile >> maxMistakes;
+        settingsFile >> searchType;
+
+        settingsFile.close();
+    }
+    else
+    {
+        cout << "Settings file not found. Using default settings."
+             << endl;
+    }
+
+    // CHECK SETTINGS
+    if (maxMistakes < 1)
+    {
+        maxMistakes = 3;
+    }
+
+    if (searchType != LINEAR_SEARCH_UNSORTED &&searchType != LINEAR_SEARCH_SORTED &&searchType != BINARY_SEARCH)
+    {
+        searchType = LINEAR_SEARCH_UNSORTED;
+    }
+
+    // WELCOME MESSAGE
+    cout << "*****************************" << endl;
+    cout << "Welcome to the spell checker!" << endl;
+    cout << "*****************************" << endl;
+
+    // 1. INITIALIZE ARRAY
+    initializeArray(dictionary, MAX_WORDS);
+
+    // 2. POPULATE ARRAY
+    bool success = populateArray(dictionary, MAX_WORDS, filename);
+
+    if (!success)
+    {
+        cout << "Error: Could not load dictionary file!" << endl;
+
+        delete[] dictionary;
+        return 1;
+    }
+
+    // 3. COUNT WORDS
+    int activeWords = countNonEmptyWords(dictionary, MAX_WORDS);
+
+    cout << "Loaded " << activeWords<< " words from dictionary." << endl;
+
+    // 4. SORT ARRAY IF NEEDED
+    if (searchType == LINEAR_SEARCH_SORTED ||searchType == BINARY_SEARCH){
+        sort(dictionary, dictionary + activeWords);
+    }
+
+    // PROGRAM VARIABLES
+    string word;
+    char answer = 'Y';
+    int mistakes = 0;
+
+    // 5. MAIN LOOP
+    while (answer == 'Y' || answer == 'y')
+    {
+        cout << "Please enter a word: ";
+        cin >> word;
+
+        // START TIMER
+        auto start = high_resolution_clock::now();
+
+        // SEARCH FOR WORD
+        bool found = spellCheck(dictionary, word,searchType, activeWords);
+
+        // END TIMER
+        auto end = high_resolution_clock::now();
+
+        auto elapsed = duration_cast<microseconds>(end - start).count();
+
+        // CHECK IF WORD WAS FOUND
+        if (found == true){
+            cout << "The word " << word<< " is spelled correctly!" << endl;
+
+            // RESET MISTAKES
+            mistakes = 0;
+        }
+        else
+        {
+            cout << "uh-oh It looks like '" << word<< "'wasn't spelt right"<< endl;
+            cout <<"Let's try spelling it again."<< endl;
+
+            mistakes++;
+        }
+
+        // DISPLAY SEARCH TIME
+        if (DEBUG == true)
+        {
+            if (searchType == BINARY_SEARCH){
+                cout << "Binary search took " << elapsed<< " microseconds." << endl;
+            }
+            else{ 
+                cout << "Linear search took " << elapsed<< " microseconds." << endl;
+            }
+        }
+
+        // CHECK MAXIMUM MISTAKES
+        if (mistakes >= maxMistakes)
+        {
+            cout << "You have reached the maximum number ("<< maxMistakes<< ") of misspelled words allowed." << endl;
+            cout << "Thank you for using the spell checker!"<< endl;
+
+            break;
+        }
+
+        // ASK IF STUDENT WANTS TO CONTINUE
+        cout << "Do you want to continue (Y/N): ";
+        cin >> answer;
+    }
+
+    // GOODBYE MESSAGE
+    if (answer == 'N' || answer == 'n')
+    {
+        cout << "Thank you for using the spell checker!" << endl;
+    }
+
+    // DELETE ARRAY
+    delete[] dictionary;
+
+    return 0;
+}
+
+
+
+
+
+
+
+// FUNCTIONS
+
+
+// FUNCTION 1: INITIALIZE ARRAY
+void initializeArray(string dictArray[], int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        dictArray[i] = "";
+    }
+}
+
+
+// FUNCTION 2: POPULATE ARRAY
+bool populateArray(string dictArray[], int size, string filename)
+{
+    ifstream inputFile(filename);
+
+    // CHECK IF FILE EXISTS
+    if (!inputFile.is_open())//remember if ! it is false, so this mean is file not open!!!
+    {
+        return false;
+    }
+
+    string word;
+    int count = 0;
+
+    // READ WORDS FROM FILE
+    while (count < size && inputFile >> word)
+    {
+        dictArray[count] = word;
+        count++;
+    }
+
+    inputFile.close();
+
+    return true;
+}
+
+
+// FUNCTION 3: COUNT NONEMPTY WORDS
+int countNonEmptyWords(const string dictArray[], int size)
+{
+    int count = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (dictArray[i] != "")
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+//NEW ONE FOR LAB 7 (also check array 3 slides for inspiration)
+// FUNCTION 4: LINEAR SEARCH UNSORTED
+bool linearSearchUnsorted(const string dictArray[],string word, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (dictArray[i] == word)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+// FUNCTION 5: LINEAR SEARCH SORTED
+bool linearSearchSorted(const string dictArray[],string word, int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (dictArray[i] == word)
+        {
+            return true;
+        }
+
+        if (dictArray[i] > word)
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+
+// FUNCTION 6: BINARY SEARCH//array 3
+bool binarySearch(const string dictArray[],string word, int size)
+{
+    int first = 0;
+    int last = size - 1;
+
+    while (first <= last)
+    {
+        int middle = (first + last) / 2;
+
+        if (dictArray[middle] == word)
+        {
+            return true;
+        }
+        if (dictArray[middle] < word)
+        {
+            first = middle + 1;
+        }
+        else
+        {
+            last = middle - 1;
+        }
+    }
+
+    return false;
+}
+
+
+// FUNCTION 7: SPELL CHECK
+bool spellCheck(const string dictArray[],string word, string searchType, int size)
+{
+    if (searchType == LINEAR_SEARCH_UNSORTED)
+    {
+        return linearSearchUnsorted(dictArray, word, size);
+    }
+    if (searchType == LINEAR_SEARCH_SORTED)
+    {
+        return linearSearchSorted(dictArray, word, size);
+    }
+    if (searchType == BINARY_SEARCH)
+    {
+        return binarySearch(dictArray, word, size);
+    }
+
+    return false;
+}
